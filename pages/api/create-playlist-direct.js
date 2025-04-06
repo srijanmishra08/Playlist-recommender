@@ -140,13 +140,20 @@ export default async function handler(req, res) {
     // Process all the tracks to extract artists and track IDs
     for (const playlistTracks of playlistTracksResults) {
       for (const item of playlistTracks.body.items) {
-        if (item.track) {
+        if (item && item.track) {
+          // Skip tracks with null data
+          if (!item.track.id) continue;
+          
           userTrackIds.add(item.track.id);
           allTracks.push(item.track);
           
           // Add all artists from the track
-          for (const artist of item.track.artists) {
-            artistIds.add(artist.id);
+          if (item.track.artists && Array.isArray(item.track.artists)) {
+            for (const artist of item.track.artists) {
+              if (artist && artist.id) {
+                artistIds.add(artist.id);
+              }
+            }
           }
         }
       }
@@ -222,7 +229,7 @@ export default async function handler(req, res) {
       // - Popularity (but not too popular to enable discovery)
       // - Add a random component to ensure different results each time
       const rankedArtists = allArtists
-        .filter(artist => artist.id && artist.genres)
+        .filter(artist => artist && artist.id && artist.genres) // Ensure artist has all required properties
         .map(artist => {
           // Count how many of the artist's genres match the user's top genres
           const genreMatchCount = (artist.genres || []).filter(genre => 
@@ -235,7 +242,7 @@ export default async function handler(req, res) {
             ? artist.popularity 
             : artist.popularity > 85 
               ? 180 - artist.popularity // Penalize super popular artists (180-90 = 90, 180-100 = 80)
-              : artist.popularity; // Keep score as is for less popular artists
+              : artist.popularity || 50; // Use 50 as default if popularity is missing
           
           // Add a randomization factor to ensure different results each time
           // This will be between 0-10 points (enough to shuffle things without overwhelming the main algorithm)
@@ -243,7 +250,7 @@ export default async function handler(req, res) {
               
           return {
             id: artist.id,
-            name: artist.name,
+            name: artist.name || 'Unknown Artist',
             // Include the random factor in the score to ensure variety on each request
             score: (genreMatchCount * 20) + popularityScore + randomFactor
           };
@@ -258,7 +265,9 @@ export default async function handler(req, res) {
       
       // Step 3: Get top tracks from highest ranked artists
       const topTracksPromises = [];
-      const topRankedArtistIds = rankedArtists.map(artist => artist.id);
+      const topRankedArtistIds = rankedArtists
+        .filter(artist => artist && artist.id) // Double check that all artists have IDs
+        .map(artist => artist.id);
       
       // Randomize order and select a different subset of artists each time
       // This ensures variety in recommendations between requests
@@ -267,12 +276,22 @@ export default async function handler(req, res) {
       
       // Take a different number of artists each time (between 8-10)
       // This adds more variety to the recommendations
-      const artistCount = 8 + Math.floor(Math.random() * 3); // 8, 9, or 10
+      const artistCount = Math.min(8 + Math.floor(Math.random() * 3), shuffledArtistIds.length); // 8, 9, or 10, but not more than available
       const discoveryArtistIds = shuffledArtistIds.slice(0, artistCount);
       
-      console.log(`Selected ${artistCount} artists randomly from top 20 for this playlist`);
+      console.log(`Selected ${artistCount} artists randomly from top ${topRankedArtistIds.length} for this playlist`);
+      
+      if (discoveryArtistIds.length === 0) {
+        console.log('No valid artists found for discovery, using fallback playlist');
+        return res.status(200).json(getFallbackPlaylist(cleanUserId));
+      }
       
       for (const artistId of discoveryArtistIds) {
+        if (!artistId) {
+          console.log('Skipping undefined artist ID');
+          continue;
+        }
+        
         topTracksPromises.push(
           spotifyApi.getArtistTopTracks(artistId, 'US')
             .catch(err => {
@@ -288,11 +307,12 @@ export default async function handler(req, res) {
       let discoveryTracks = [];
       
       for (const result of topTracksResults) {
-        if (result.body && result.body.tracks) {
+        if (result && result.body && result.body.tracks) {
           // Filter out tracks the user already has
-          const newTracks = result.body.tracks.filter(track => 
-            !userTrackIds.has(track.id)
-          );
+          const newTracks = result.body.tracks
+            .filter(track => track && track.id && !userTrackIds.has(track.id))
+            // Also verify the track has all required fields
+            .filter(track => track.artists && track.artists.length > 0 && track.album);
           
           // Take a random subset of each artist's tracks to ensure variety
           // This way we don't always pick the same top tracks
