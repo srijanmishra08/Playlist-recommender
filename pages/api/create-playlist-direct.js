@@ -49,6 +49,10 @@ export default async function handler(req, res) {
       const authData = await spotifyApi.clientCredentialsGrant();
       console.log('Authentication successful, token expires in', authData.body.expires_in, 'seconds');
       spotifyApi.setAccessToken(authData.body.access_token);
+    } else {
+      // If user provided an access token, use it
+      console.log('Using provided user access token');
+      spotifyApi.setAccessToken(accessToken);
     }
     
     // Try to get the actual user first to verify they exist
