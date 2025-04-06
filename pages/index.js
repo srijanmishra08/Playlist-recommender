@@ -191,12 +191,18 @@ export default function Home() {
 
         <div className={styles.authSection}>
           {!isAuthenticated ? (
-            <button 
-              onClick={handleLogin} 
-              className={styles.spotifyLoginButton}
-            >
-              Login with Spotify
-            </button>
+            <>
+              <button 
+                onClick={handleLogin} 
+                className={styles.spotifyLoginButton}
+              >
+                Login with Spotify
+              </button>
+              <p className={styles.loginNote}>
+                Login is recommended for best results. Without login, some user profiles may return 403 errors 
+                due to Spotify API permissions.
+              </p>
+            </>
           ) : (
             <div className={styles.authStatus}>
               <span className={styles.loggedInStatus}>

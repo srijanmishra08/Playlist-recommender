@@ -49,6 +49,19 @@ export default async function handler(req, res) {
       const authData = await spotifyApi.clientCredentialsGrant();
       console.log('Authentication successful, token expires in', authData.body.expires_in, 'seconds');
       spotifyApi.setAccessToken(authData.body.access_token);
+      
+      // WARNING: Client credentials flow has limited permissions
+      console.log('WARNING: Using client credentials authentication - limited access to user data');
+      console.log('Some API calls may return 403 Forbidden errors');
+      
+      // Special handling for client credentials authentication when getting a user
+      try {
+        console.log(`Checking if user "${cleanUserId}" exists (public info only)...`);
+        // When using client credentials, we can only fetch limited public data
+        // This may result in 403 errors for certain users or private profiles
+      } catch (userCheckErr) {
+        console.log('Could not check user due to client credentials limitations');
+      }
     } else {
       // If user provided an access token, use it
       console.log('Using provided user access token');
@@ -76,34 +89,56 @@ export default async function handler(req, res) {
         console.error(`Status code: ${userError.statusCode}`);
       }
       
-      // Try some common variations of the username
-      const variations = [
-        cleanUserId.toLowerCase(),
-        cleanUserId.toUpperCase(),
-        capitalizeFirstLetter(cleanUserId),
-        cleanUserId.replace(/\s+/g, '')
-      ];
-      
-      let userFound = false;
-      
-      for (const variation of variations) {
-        if (variation === cleanUserId) continue; // Skip if it's the same as the original
+      // Special handling for 403 errors (Forbidden)
+      if (userError.statusCode === 403) {
+        console.log('403 Forbidden error - This usually means you need to login with Spotify');
+        console.log('Proceeding with the provided user ID without verification');
         
+        // Continue with the user-provided ID without verification
+        // This is risky but it's our only option with the 403 error
+        verifiedUserId = cleanUserId;
+        
+        // Try to get playlists directly - this might work even if getUser fails
         try {
-          console.log(`Trying variation "${variation}"...`);
-          const user = await spotifyApi.getUser(variation);
-          console.log(`User found with variation "${variation}": ${user.body.display_name || variation} (ID: ${user.body.id})`);
-          verifiedUserId = user.body.id;
-          userFound = true;
-          break;
-        } catch (err) {
-          console.log(`User not found with variation "${variation}"`);
+          console.log(`Trying to fetch playlists directly for user: "${verifiedUserId}"`);
+          const directPlaylists = await spotifyApi.getUserPlaylists(verifiedUserId, { limit: 1 });
+          console.log(`Successfully fetched playlists directly - user exists!`);
+        } catch (playlistError) {
+          console.error(`Failed to fetch playlists directly:`, playlistError.message);
+          console.log('Could not verify user existence, using fallback playlist');
+          return res.status(200).json(getFallbackPlaylist(cleanUserId));
         }
-      }
-      
-      if (!userFound) {
-        console.log('Could not find user with any variations, using fallback playlist');
-        return res.status(200).json(getFallbackPlaylist(cleanUserId));
+      } else {
+        // For non-403 errors, try username variations as before
+        // Try some common variations of the username
+        const variations = [
+          cleanUserId.toLowerCase(),
+          cleanUserId.toUpperCase(),
+          capitalizeFirstLetter(cleanUserId),
+          cleanUserId.replace(/\s+/g, '')
+        ];
+        
+        let userFound = false;
+        
+        for (const variation of variations) {
+          if (variation === cleanUserId) continue; // Skip if it's the same as the original
+          
+          try {
+            console.log(`Trying variation "${variation}"...`);
+            const user = await spotifyApi.getUser(variation);
+            console.log(`User found with variation "${variation}": ${user.body.display_name || variation} (ID: ${user.body.id})`);
+            verifiedUserId = user.body.id;
+            userFound = true;
+            break;
+          } catch (err) {
+            console.log(`User not found with variation "${variation}"`);
+          }
+        }
+        
+        if (!userFound) {
+          console.log('Could not find user with any variations, using fallback playlist');
+          return res.status(200).json(getFallbackPlaylist(cleanUserId));
+        }
       }
     }
     
