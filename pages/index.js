@@ -11,6 +11,7 @@ export default function Home() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [savingToSpotify, setSavingToSpotify] = useState(false);
   const [spotifySaveSuccess, setSpotifySaveSuccess] = useState(null);
+  const [showHelp, setShowHelp] = useState(false);
 
   // Handle OAuth callback from Spotify
   useEffect(() => {
@@ -135,6 +136,7 @@ export default function Home() {
     setLoading(true);
     setError(null);
     setPlaylist(null);
+    setSpotifySaveSuccess(null);
 
     try {
       const response = await fetch('/api/create-playlist-direct', {
@@ -181,85 +183,104 @@ export default function Home() {
     return null;
   };
 
+  // Toggle help visibility
+  const toggleHelp = () => {
+    setShowHelp(!showHelp);
+  };
+
   return (
     <div className={styles.container}>
       <main className={styles.main}>
-        <h1 className={styles.title}>Spotify Playlist Recommender</h1>
-        <p className={styles.description}>
-          ML-powered playlist generator based on your music taste
-        </p>
+        <div className={styles.header}>
+          <h1 className={styles.title}>Spotify Playlist Generator</h1>
+          <p className={styles.description}>
+            Create personalized playlists with our AI-powered algorithm
+          </p>
+        </div>
 
-        <div className={styles.authSection}>
+        <div className={styles.card}>
           {!isAuthenticated ? (
-            <>
+            <div className={styles.loginCard}>
+              <div className={styles.loginHeader}>
+                <h2>Get Personalized Recommendations</h2>
+                <p>Connect with Spotify for the best experience and to save your playlists</p>
+              </div>
               <button 
                 onClick={handleLogin} 
                 className={styles.spotifyLoginButton}
               >
-                Login with Spotify
+                <span className={styles.spotifyLogo}>♫</span> Connect with Spotify
               </button>
-              <p className={styles.loginNote}>
-                Login is recommended for best results. Without login, some user profiles may return 403 errors 
-                due to Spotify API permissions.
-              </p>
-            </>
+              <div className={styles.orDivider}>
+                <span>OR</span>
+              </div>
+              <p className={styles.skipText}>Continue without logging in</p>
+            </div>
           ) : (
-            <div className={styles.authStatus}>
-              <span className={styles.loggedInStatus}>
+            <div className={styles.authenticatedBanner}>
+              <span className={styles.connectedBadge}>
                 <span className={styles.greenDot}></span> Connected to Spotify
               </span>
             </div>
           )}
-        </div>
 
-        <div className={styles.helpText}>
-          <h3>How to find your Spotify username:</h3>
-          <ol>
-            <li>Open Spotify app or website</li>
-            <li>Go to your profile</li>
-            <li>Click "..." then "Share" then "Copy Profile Link"</li>
-            <li>Paste the entire URL here (or just the username part after "user/")</li>
-          </ol>
-          <p><strong>Note:</strong> Make sure you have public playlists that contain tracks!</p>
-        </div>
+          <div className={styles.inputSection}>
+            <form onSubmit={handleSubmit} className={styles.form}>
+              <div className={styles.formHeader}>
+                <h2>Generate a Playlist</h2>
+                <div className={styles.helpIconWrapper}>
+                  <button type="button" onClick={toggleHelp} className={styles.helpIcon}>
+                    ?
+                  </button>
+                </div>
+              </div>
 
-        <section className={styles.formSection}>
-          <form onSubmit={handleSubmit} className={styles.form}>
-            <div className={styles.inputGroup}>
-              <label htmlFor="userId">Spotify Username</label>
-              <input
-                type="text"
-                id="userId"
-                value={userId}
-                onChange={(e) => setUserId(e.target.value)}
-                placeholder="Enter Spotify username"
-                className={styles.input}
-              />
-              <p className={styles.helpText}>
-                Not sure where to find your Spotify username? 
-                Open Spotify, go to your profile, click the three dots (•••) and select "Share" → "Copy Profile Link". 
-                Paste that link here.
-              </p>
-            </div>
-            <button
-              type="submit"
-              className={styles.generateButton}
-              disabled={loading}
-            >
-              {loading ? 'Generating...' : 'Generate Playlist'}
-            </button>
-          </form>
-          
-          {error && <div className={styles.error}>{error}</div>}
-        </section>
+              {showHelp && (
+                <div className={styles.helpBox}>
+                  <h4>How to find a Spotify username</h4>
+                  <ol>
+                    <li>Open Spotify and go to the profile</li>
+                    <li>Click "..." → "Share" → "Copy Profile Link"</li>
+                    <li>Paste the entire URL here</li>
+                  </ol>
+                  <p><strong>Pro tip:</strong> Try your friends' profiles too!</p>
+                </div>
+              )}
+
+              <div className={styles.inputWrapper}>
+                <input
+                  type="text"
+                  value={userId}
+                  onChange={(e) => setUserId(e.target.value)}
+                  placeholder="Enter Spotify username or profile URL"
+                  className={styles.input}
+                />
+                <button
+                  type="submit"
+                  className={styles.generateButton}
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <span className={styles.loadingSpinner}></span>
+                  ) : (
+                    'Generate'
+                  )}
+                </button>
+              </div>
+
+              {error && <div className={styles.error}>{error}</div>}
+            </form>
+          </div>
+        </div>
 
         {playlist && (
-          <div className={styles.results}>
+          <div className={styles.playlistCard}>
             <div className={styles.playlistHeader}>
-              <h2>{playlist.name}</h2>
-              <p>{playlist.description}</p>
+              <div className={styles.playlistInfo}>
+                <h2>{playlist.name}</h2>
+                <p className={styles.playlistDescription}>{playlist.description}</p>
+              </div>
               
-              {/* Save to Spotify button */}
               {playlist.canSave && (
                 <button 
                   onClick={handleSaveToSpotify} 
@@ -268,13 +289,6 @@ export default function Home() {
                 >
                   {savingToSpotify ? 'Saving...' : 'Save to Spotify'}
                 </button>
-              )}
-              
-              {/* Show message if not authenticated but can save */}
-              {!isAuthenticated && (
-                <p className={styles.authPrompt}>
-                  Login with Spotify to save this playlist to your account
-                </p>
               )}
             </div>
 
@@ -293,35 +307,56 @@ export default function Home() {
               </div>
             )}
             
-            <ul className={styles.tracks}>
+            <ul className={styles.tracksList}>
               {playlist.tracks.map((track, index) => (
-                <li key={index} className={styles.track}>
-                  <img src={track.albumImage} alt={track.album} className={styles.albumCover} />
-                  <div className={styles.trackInfo}>
-                    <strong>{track.name}</strong>
-                    <span>{track.artists.join(', ')}</span>
+                <li key={index} className={styles.trackItem}>
+                  <div className={styles.trackItemContent}>
+                    <img src={track.albumImage || '/default-album.png'} alt={track.album} className={styles.albumCover} />
+                    <div className={styles.trackInfo}>
+                      <div className={styles.trackName}>{track.name}</div>
+                      <div className={styles.trackArtist}>{track.artists.join(', ')}</div>
+                      <div className={styles.trackAlbum}>{track.album}</div>
+                    </div>
+                    {track.previewUrl && (
+                      <div className={styles.trackControls}>
+                        <audio 
+                          className={styles.previewAudio} 
+                          controls 
+                          src={track.previewUrl}
+                        ></audio>
+                      </div>
+                    )}
                   </div>
-                  {track.previewUrl && (
-                    <audio 
-                      className={styles.previewAudio} 
-                      controls 
-                      src={track.previewUrl}
-                    ></audio>
-                  )}
                 </li>
               ))}
             </ul>
             
-            {/* Repeat save button at bottom for convenience */}
-            {playlist.canSave && (
+            {/* Footer actions */}
+            <div className={styles.playlistFooter}>
+              {!isAuthenticated ? (
+                <button 
+                  onClick={handleLogin} 
+                  className={styles.spotifyLoginButton}
+                >
+                  <span className={styles.spotifyLogo}>♫</span> Login to save this playlist
+                </button>
+              ) : playlist.canSave && (
+                <button 
+                  onClick={handleSaveToSpotify} 
+                  className={styles.saveButtonLarge}
+                  disabled={savingToSpotify}
+                >
+                  {savingToSpotify ? 'Saving to Spotify...' : 'Save to Spotify'}
+                </button>
+              )}
+              
               <button 
-                onClick={handleSaveToSpotify} 
-                className={styles.saveButtonBottom}
-                disabled={savingToSpotify}
+                onClick={handleSubmit} 
+                className={styles.generateAgainButton}
               >
-                {savingToSpotify ? 'Saving...' : 'Save to Spotify'}
+                Generate another playlist
               </button>
-            )}
+            </div>
           </div>
         )}
       </main>

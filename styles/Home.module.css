@@ -1,314 +1,569 @@
+/* Global container */
 .container {
-  min-height: 100vh;
-  padding: 0 1rem;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  align-items: center;
-  background-color: #121212;
-  color: white;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1rem;
+  color: #333;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
 }
 
 .main {
-  width: 100%;
-  max-width: 800px;
-  padding: 2rem 0;
-  flex: 1;
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;
   align-items: center;
+  gap: 2rem;
+  padding: 2rem 0;
+}
+
+/* Header components */
+.header {
+  text-align: center;
+  margin-bottom: 1rem;
 }
 
 .title {
-  margin: 0;
-  line-height: 1.15;
-  font-size: 3rem;
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem 0;
+  background: linear-gradient(90deg, #1DB954, #1a63a9);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
   text-align: center;
-  color: #1DB954;
-  margin-bottom: 1rem;
 }
 
 .description {
-  line-height: 1.5;
-  font-size: 1.5rem;
+  font-size: 1.2rem;
+  color: #777;
+  margin: 0;
   text-align: center;
-  margin-bottom: 1rem;
 }
 
-/* Authentication Section */
-.authSection {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 1.5rem;
+/* Card containers */
+.card {
   width: 100%;
+  max-width: 600px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+  overflow: hidden;
+  margin-bottom: 2rem;
+}
+
+.playlistCard {
+  width: 100%;
+  max-width: 800px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+  overflow: hidden;
+}
+
+/* Login section */
+.loginCard {
+  padding: 2rem;
+  border-bottom: 1px solid #f0f0f0;
+  text-align: center;
+}
+
+.loginHeader {
+  margin-bottom: 1.5rem;
+}
+
+.loginHeader h2 {
+  font-size: 1.5rem;
+  margin: 0 0 0.5rem 0;
+  color: #333;
+}
+
+.loginHeader p {
+  color: #666;
+  margin: 0;
 }
 
 .spotifyLoginButton {
+  width: 100%;
+  padding: 0.8rem 1.5rem;
   background-color: #1DB954;
   color: white;
   border: none;
-  border-radius: 500px;
-  padding: 0.75rem 2rem;
+  border-radius: 30px;
   font-size: 1rem;
-  font-weight: bold;
+  font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s;
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 0.5rem;
+  transition: background-color 0.2s, transform 0.1s;
 }
 
 .spotifyLoginButton:hover {
   background-color: #1ed760;
+  transform: translateY(-1px);
 }
 
-.authStatus {
+.spotifyLoginButton:active {
+  transform: translateY(1px);
+}
+
+.spotifyLogo {
+  font-size: 1.2rem;
+}
+
+.orDivider {
+  position: relative;
+  margin: 1.5rem 0;
+  text-align: center;
+}
+
+.orDivider::before {
+  content: "";
+  position: absolute;
+  width: 100%;
+  height: 1px;
+  background: #eee;
+  top: 50%;
+  left: 0;
+}
+
+.orDivider span {
+  background: white;
+  padding: 0 1rem;
+  position: relative;
+  color: #999;
+  font-size: 0.9rem;
+}
+
+.skipText {
+  margin: 0;
+  color: #666;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.skipText:hover {
+  text-decoration: underline;
+}
+
+.authenticatedBanner {
+  padding: 1rem;
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #f0f0f0;
+  text-align: center;
+}
+
+.connectedBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 500;
+  color: #333;
+}
+
+.greenDot {
+  width: 8px;
+  height: 8px;
+  background-color: #1DB954;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+/* Input section */
+.inputSection {
+  padding: 2rem;
+}
+
+.form {
+  width: 100%;
+}
+
+.formHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.formHeader h2 {
+  font-size: 1.5rem;
+  margin: 0;
+  color: #333;
+}
+
+.helpIconWrapper {
+  position: relative;
+}
+
+.helpIcon {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #f0f0f0;
+  color: #666;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.2s;
+}
+
+.helpIcon:hover {
+  background: #e0e0e0;
+}
+
+.helpBox {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 1rem 1.5rem;
+  margin-bottom: 1.5rem;
+  border-left: 3px solid #1DB954;
+}
+
+.helpBox h4 {
+  margin: 0 0 0.5rem 0;
+  color: #333;
+}
+
+.helpBox ol {
+  margin: 0;
+  padding-left: 1.5rem;
+}
+
+.helpBox li {
+  margin-bottom: 0.25rem;
+  color: #666;
+}
+
+.helpBox p {
+  margin: 0.5rem 0 0 0;
+  color: #666;
+}
+
+.inputWrapper {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.input {
+  flex: 1;
+  padding: 0.8rem 1rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.input:focus {
+  border-color: #1DB954;
+  box-shadow: 0 0 0 2px rgba(29, 185, 84, 0.1);
+}
+
+.generateButton {
+  padding: 0.8rem 1.5rem;
+  background-color: #1DB954;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s;
+  min-width: 100px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.loggedInStatus {
-  display: flex;
-  align-items: center;
-  color: white;
-  font-size: 0.9rem;
-}
-
-.greenDot {
-  display: inline-block;
-  width: 10px;
-  height: 10px;
-  background-color: #1DB954;
-  border-radius: 50%;
-  margin-right: 8px;
-}
-
-.helpText {
-  background-color: rgba(29, 185, 84, 0.1);
-  border-radius: 8px;
-  padding: 1rem;
-  margin-bottom: 1.5rem;
-  width: 100%;
-  max-width: 600px;
-}
-
-.helpText h3 {
-  color: #1DB954;
-  margin-top: 0;
-  margin-bottom: 0.5rem;
-}
-
-.helpText ol {
-  margin: 0.5rem 0 1rem 1.5rem;
-  padding: 0;
-}
-
-.helpText li {
-  margin-bottom: 0.5rem;
-}
-
-.helpText p {
-  margin: 0;
-  color: #ff9a3c;
-  font-weight: bold;
-}
-
-.form {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  margin-bottom: 2rem;
-}
-
-.input {
-  padding: 0.75rem;
-  font-size: 1rem;
-  border-radius: 5px;
-  border: 1px solid #333;
-  background-color: #282828;
-  color: white;
-  width: 100%;
-}
-
-.button {
-  padding: 0.75rem 1.5rem;
-  font-size: 1rem;
-  border-radius: 500px;
-  border: none;
-  background-color: #1DB954;
-  color: white;
-  cursor: pointer;
-  font-weight: bold;
-  transition: background-color 0.2s;
-}
-
-.button:hover {
+.generateButton:hover {
   background-color: #1ed760;
+  transform: translateY(-1px);
 }
 
-.button:disabled {
-  background-color: #535353;
+.generateButton:active {
+  transform: translateY(1px);
+}
+
+.generateButton:disabled {
+  background-color: #ccc;
   cursor: not-allowed;
+  transform: none;
+}
+
+.loadingSpinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-radius: 50%;
+  border-top-color: white;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 .error {
-  color: #f55;
-  margin-bottom: 1rem;
-  text-align: center;
-}
-
-.results {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  background-color: #282828;
-  border-radius: 8px;
-  padding: 2rem;
-  margin-top: 2rem;
-}
-
-.playlistHeader {
-  width: 100%;
-  text-align: center;
-  margin-bottom: 2rem;
-}
-
-.playlistHeader h2 {
-  color: #1DB954;
-  margin-bottom: 0.5rem;
-}
-
-.playlistHeader p {
-  color: #b3b3b3;
-  margin-bottom: 1.5rem;
-}
-
-.saveButton, .saveButtonBottom {
-  padding: 0.75rem 1.5rem;
-  font-size: 1rem;
-  border-radius: 500px;
-  border: none;
-  background-color: #1DB954;
-  color: white;
-  cursor: pointer;
-  font-weight: bold;
-  transition: background-color 0.2s;
+  padding: 0.75rem;
   margin-top: 1rem;
-}
-
-.saveButton:hover, .saveButtonBottom:hover {
-  background-color: #1ed760;
-}
-
-.saveButton:disabled, .saveButtonBottom:disabled {
-  background-color: #535353;
-  cursor: not-allowed;
-}
-
-.saveButtonBottom {
-  margin-top: 2rem;
-}
-
-.authPrompt {
-  color: #b3b3b3;
+  background-color: #fff2f2;
+  color: #e53935;
+  border-radius: 8px;
+  border-left: 3px solid #e53935;
   font-size: 0.9rem;
-  margin-top: 1rem;
 }
 
-.successMessage {
-  background-color: rgba(29, 185, 84, 0.2);
-  border-radius: 8px;
-  padding: 1rem;
-  margin-bottom: 1.5rem;
-  width: 100%;
-  text-align: center;
-}
-
-.successMessage p {
-  color: #1DB954;
-  font-weight: bold;
-  margin-bottom: 0.5rem;
-}
-
-.tracks {
-  list-style: none;
-  padding: 0;
-  width: 100%;
-  margin: 1rem 0;
-}
-
-.track {
+/* Playlist display */
+.playlistHeader {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  padding: 0.75rem 0;
-  border-bottom: 1px solid #333;
-  flex-wrap: wrap;
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid #f0f0f0;
 }
 
-.albumCover {
-  width: 50px;
-  height: 50px;
-  border-radius: 4px;
-  margin-right: 1rem;
-}
-
-.trackInfo {
-  display: flex;
-  flex-direction: column;
+.playlistInfo {
   flex: 1;
 }
 
-.trackInfo strong {
-  margin-bottom: 0.25rem;
+.playlistInfo h2 {
+  margin: 0 0 0.25rem 0;
+  font-size: 1.5rem;
+  color: #333;
 }
 
-.trackInfo span {
-  color: #b3b3b3;
+.playlistDescription {
+  margin: 0;
+  color: #666;
   font-size: 0.9rem;
 }
 
-.previewAudio {
-  margin-top: 0.5rem;
-  width: 100%;
-  height: 30px;
+.saveButton {
+  padding: 0.6rem 1.2rem;
+  background-color: #1DB954;
+  color: white;
+  border: none;
+  border-radius: 30px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  white-space: nowrap;
 }
 
-@media (min-width: 768px) {
-  .form {
-    flex-direction: row;
-  }
-  
-  .button {
-    white-space: nowrap;
-  }
-  
-  .previewAudio {
-    width: auto;
-    margin-top: 0;
-    margin-left: 1rem;
-  }
-  
-  .track {
-    flex-wrap: nowrap;
-  }
+.saveButton:hover {
+  background-color: #1ed760;
+}
+
+.saveButton:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.successMessage {
+  padding: 1rem 2rem;
+  background-color: #f0f9f0;
+  border-bottom: 1px solid #e0f0e0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.successMessage p {
+  margin: 0;
+  color: #2e7d32;
+  font-weight: 500;
 }
 
 .spotifyLink {
   display: inline-block;
-  padding: 0.75rem 1.5rem;
+  padding: 0.4rem 0.8rem;
   background-color: #1DB954;
   color: white;
   text-decoration: none;
-  border-radius: 500px;
-  font-weight: bold;
-  margin-top: 0.5rem;
+  border-radius: 30px;
+  font-size: 0.9rem;
+  font-weight: 500;
   transition: background-color 0.2s;
 }
 
 .spotifyLink:hover {
   background-color: #1ed760;
+}
+
+/* Tracks list */
+.tracksList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.trackItem {
+  padding: 1rem 2rem;
+  border-bottom: 1px solid #f0f0f0;
+  transition: background-color 0.2s;
+}
+
+.trackItem:hover {
+  background-color: #f9f9f9;
+}
+
+.trackItem:last-child {
+  border-bottom: none;
+}
+
+.trackItemContent {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.albumCover {
+  width: 60px;
+  height: 60px;
+  border-radius: 4px;
+  object-fit: cover;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.trackInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.trackName {
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+  color: #333;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.trackArtist {
+  font-size: 0.9rem;
+  color: #666;
+  margin-bottom: 0.25rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.trackAlbum {
+  font-size: 0.8rem;
+  color: #888;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.trackControls {
+  display: flex;
+  align-items: center;
+}
+
+.previewAudio {
+  width: 180px;
+  height: 32px;
+}
+
+/* Footer actions */
+.playlistFooter {
+  padding: 1.5rem 2rem;
+  border-top: 1px solid #f0f0f0;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.saveButtonLarge {
+  flex: 2;
+  padding: 0.8rem 1.5rem;
+  background-color: #1DB954;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.saveButtonLarge:hover {
+  background-color: #1ed760;
+}
+
+.saveButtonLarge:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.generateAgainButton {
+  flex: 1;
+  padding: 0.8rem 1.5rem;
+  background-color: #f0f0f0;
+  color: #333;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.generateAgainButton:hover {
+  background-color: #e0e0e0;
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+  .playlistHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .saveButton {
+    align-self: flex-start;
+  }
+  
+  .trackItemContent {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .albumCover {
+    width: 100%;
+    height: auto;
+    max-width: 200px;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+  }
+  
+  .trackInfo {
+    width: 100%;
+    margin-bottom: 1rem;
+  }
+  
+  .trackControls {
+    width: 100%;
+  }
+  
+  .previewAudio {
+    width: 100%;
+  }
+  
+  .playlistFooter {
+    flex-direction: column;
+  }
+  
+  .inputWrapper {
+    flex-direction: column;
+  }
+  
+  .generateButton {
+    width: 100%;
+  }
 } 
