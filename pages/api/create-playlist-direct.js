@@ -5,28 +5,41 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  let { userId, accessToken } = req.body;
+  const { userId, accessToken } = req.body;
 
   if (!userId) {
     return res.status(400).json({ error: 'User ID is required' });
   }
 
   // Clean up the user ID - handle URLs and remove any spaces or extra characters
-  userId = cleanUserId(userId);
+  const cleanUserId = cleanSpotifyUserId(userId);
   
-  console.log(`Starting playlist creation for user: "${userId}"`);
+  // Log credential status (without exposing secrets)
+  console.log('Spotify API credentials check:');
+  console.log('- SPOTIFY_CLIENT_ID:', process.env.SPOTIFY_CLIENT_ID ? 'Present' : 'MISSING');
+  console.log('- SPOTIFY_CLIENT_SECRET:', process.env.SPOTIFY_CLIENT_SECRET ? 'Present' : 'MISSING');
+  console.log('- User provided access token:', accessToken ? 'Present' : 'Not provided');
 
-  // Initialize Spotify API client with hardcoded credentials
+  // Initialize Spotify API
   const spotifyApi = new SpotifyWebApi({
-    clientId: '3e19f5ae83c443e3b963a177e78b008b',
-    clientSecret: '0bd55c4c50d3465f8a9d70878e260a07',
-    redirectUri: 'http://localhost:3000/api/callback'
+    clientId: process.env.SPOTIFY_CLIENT_ID,
+    clientSecret: process.env.SPOTIFY_CLIENT_SECRET,
+    redirectUri: process.env.REDIRECT_URI || 'http://localhost:3000/api/callback'
   });
 
-  // If we have a user access token, use it (for creating playlists in user's account)
-  if (accessToken) {
-    spotifyApi.setAccessToken(accessToken);
+  // Validate credentials
+  if (!process.env.SPOTIFY_CLIENT_ID || !process.env.SPOTIFY_CLIENT_SECRET) {
+    console.error('Missing Spotify API credentials in environment variables');
+    return res.status(500).json({ 
+      error: 'Server configuration error',
+      details: 'The server is missing required Spotify credentials' 
+    });
   }
+
+  console.log(`Starting playlist creation for user: "${cleanUserId}"`);
+  
+  // Variable to store the verified user ID after checks
+  let verifiedUserId = cleanUserId;
 
   try {
     console.log('Attempting to authenticate with Spotify API...');
@@ -40,33 +53,33 @@ export default async function handler(req, res) {
     
     // Try to get the actual user first to verify they exist
     try {
-      console.log(`Checking if user "${userId}" exists...`);
-      const user = await spotifyApi.getUser(userId);
-      console.log(`User found: ${user.body.display_name || userId} (ID: ${user.body.id})`);
+      console.log(`Checking if user "${cleanUserId}" exists...`);
+      const user = await spotifyApi.getUser(cleanUserId);
+      console.log(`User found: ${user.body.display_name || cleanUserId} (ID: ${user.body.id})`);
       
       // Use the verified user ID from the response
-      userId = user.body.id;
+      verifiedUserId = user.body.id;
     } catch (userError) {
-      console.error(`Error finding user "${userId}":`, userError.message);
+      console.error(`Error finding user "${cleanUserId}":`, userError.message);
       
       // Try some common variations of the username
       const variations = [
-        userId.toLowerCase(),
-        userId.toUpperCase(),
-        capitalizeFirstLetter(userId),
-        userId.replace(/\s+/g, '')
+        cleanUserId.toLowerCase(),
+        cleanUserId.toUpperCase(),
+        capitalizeFirstLetter(cleanUserId),
+        cleanUserId.replace(/\s+/g, '')
       ];
       
       let userFound = false;
       
       for (const variation of variations) {
-        if (variation === userId) continue; // Skip if it's the same as the original
+        if (variation === cleanUserId) continue; // Skip if it's the same as the original
         
         try {
           console.log(`Trying variation "${variation}"...`);
           const user = await spotifyApi.getUser(variation);
           console.log(`User found with variation "${variation}": ${user.body.display_name || variation} (ID: ${user.body.id})`);
-          userId = user.body.id;
+          verifiedUserId = user.body.id;
           userFound = true;
           break;
         } catch (err) {
@@ -76,13 +89,13 @@ export default async function handler(req, res) {
       
       if (!userFound) {
         console.log('Could not find user with any variations, using fallback playlist');
-        return res.status(200).json(getFallbackPlaylist(userId));
+        return res.status(200).json(getFallbackPlaylist(cleanUserId));
       }
     }
     
-    // Get user's public playlists
-    console.log(`Fetching public playlists for user: "${userId}"`);
-    const userPlaylists = await spotifyApi.getUserPlaylists(userId, { limit: 50 });
+    // Get user's public playlists using the verified ID
+    console.log(`Fetching public playlists for user: "${verifiedUserId}"`);
+    const userPlaylists = await spotifyApi.getUserPlaylists(verifiedUserId, { limit: 50 });
     console.log(`Found ${userPlaylists.body.items.length} playlists`);
     
     // Print the names of all playlists found for debugging
@@ -99,7 +112,7 @@ export default async function handler(req, res) {
     
     if (publicPlaylists.length === 0) {
       console.log('No public playlists found, using fallback playlist');
-      return res.status(200).json(getFallbackPlaylist(userId));
+      return res.status(200).json(getFallbackPlaylist(cleanUserId));
     }
     
     // Get tracks from user's playlists
@@ -140,7 +153,7 @@ export default async function handler(req, res) {
     // If we don't have enough seed data, use fallback
     if (artistIds.size === 0 && userTrackIds.size === 0) {
       console.log('Not enough seed data found, using fallback playlist');
-      return res.status(200).json(getFallbackPlaylist(userId));
+      return res.status(200).json(getFallbackPlaylist(cleanUserId));
     }
 
     // DIRECT ARTIST APPROACH
@@ -291,7 +304,7 @@ export default async function handler(req, res) {
       
       if (discoveryTracks.length === 0) {
         console.log('No discovery tracks found, using fallback playlist');
-        return res.status(200).json(getFallbackPlaylist(userId));
+        return res.status(200).json(getFallbackPlaylist(cleanUserId));
       }
       
       // Add timestamp to playlist name to indicate it's fresh
@@ -303,7 +316,7 @@ export default async function handler(req, res) {
         `${topGenres[0]} Discovery`,
         `${topGenres[0]} & ${topGenres[1]} Explorer`,
         `New ${topGenres[0]} Picks`,
-        `${userId}'s ${topGenres[0]} Radio`
+        `${verifiedUserId}'s ${topGenres[0]} Radio`
       ];
       
       // Randomly select a playlist name
@@ -369,14 +382,14 @@ export default async function handler(req, res) {
     
     // If all else fails, return a fallback playlist
     console.log('All discovery methods failed, using fallback playlist');
-    return res.status(200).json(getFallbackPlaylist(userId));
+    return res.status(200).json(getFallbackPlaylist(cleanUserId));
   } catch (error) {
     console.error('Error creating playlist:', error);
     if (error.statusCode === 404) {
       console.log('User not found, returning fallback playlist');
-      return res.status(200).json(getFallbackPlaylist(userId));
+      return res.status(200).json(getFallbackPlaylist(cleanUserId));
     }
-    return res.status(200).json(getFallbackPlaylist(userId));
+    return res.status(200).json(getFallbackPlaylist(cleanUserId));
   }
 }
 
@@ -501,7 +514,7 @@ function getFallbackPlaylist(userId) {
 }
 
 // Helper function to clean user ID
-function cleanUserId(userId) {
+function cleanSpotifyUserId(userId) {
   // If it's a full Spotify URL, extract the user ID
   if (userId.includes('spotify.com/user/')) {
     userId = userId.split('spotify.com/user/')[1].split(/[?/#]/)[0];

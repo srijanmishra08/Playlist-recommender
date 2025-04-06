@@ -3,12 +3,28 @@ import SpotifyWebApi from 'spotify-web-api-node';
 export default async function handler(req, res) {
   const method = req.method;
 
+  // Get Spotify credentials from environment variables
   const clientId = process.env.SPOTIFY_CLIENT_ID;
   const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
-  
-  // Use environment variable for redirect URI if available, otherwise use localhost
   const redirectUri = process.env.REDIRECT_URI || 'http://localhost:3000/api/callback';
-
+  
+  // Log environment variables (without exposing secrets)
+  console.log('Environment check:');
+  console.log('- SPOTIFY_CLIENT_ID:', clientId ? 'Present' : 'MISSING');
+  console.log('- SPOTIFY_CLIENT_SECRET:', clientSecret ? 'Present' : 'MISSING');
+  console.log('- REDIRECT_URI:', redirectUri);
+  console.log('- NODE_ENV:', process.env.NODE_ENV);
+  console.log('- APP_URL:', process.env.APP_URL || 'Not set');
+  
+  // Validate credentials
+  if (!clientId || !clientSecret) {
+    console.error('Missing Spotify API credentials. Please check environment variables.');
+    return res.status(500).json({
+      error: 'Server configuration error',
+      details: 'The server is missing required Spotify credentials'
+    });
+  }
+  
   // Generate authorization URL for login
   if (method === 'GET') {
     const scopes = [
@@ -20,20 +36,30 @@ export default async function handler(req, res) {
       'playlist-modify-private'
     ];
     
-    const spotifyApi = new SpotifyWebApi({
-      clientId: clientId,
-      clientSecret: clientSecret,
-      redirectUri: redirectUri
-    });
-    
-    // Create the authorization URL
-    const authorizeURL = spotifyApi.createAuthorizeURL(scopes, 'spotify_auth_state');
-    
-    // Return both formats to ensure compatibility
-    return res.status(200).json({ 
-      authorizeURL: authorizeURL,
-      authUrl: authorizeURL 
-    });
+    try {
+      const spotifyApi = new SpotifyWebApi({
+        clientId: clientId,
+        clientSecret: clientSecret,
+        redirectUri: redirectUri
+      });
+      
+      // Create the authorization URL
+      const authorizeURL = spotifyApi.createAuthorizeURL(scopes, 'spotify_auth_state');
+      
+      console.log('Generated authorization URL successfully');
+      
+      // Return both formats to ensure compatibility
+      return res.status(200).json({ 
+        authorizeURL: authorizeURL,
+        authUrl: authorizeURL 
+      });
+    } catch (error) {
+      console.error('Error generating authorization URL:', error);
+      return res.status(500).json({
+        error: 'Failed to generate Spotify authorization URL',
+        details: error.message
+      });
+    }
   }
   
   // Exchange code for token
