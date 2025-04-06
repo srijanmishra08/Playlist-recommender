@@ -63,14 +63,19 @@ export default function Home() {
     }
   };
 
-  // Authenticate with Spotify
-  const handleSpotifyLogin = async () => {
+  // Handle Spotify Login
+  const handleLogin = async () => {
     try {
-      const response = await axios.get('/api/spotify-auth');
-      window.location.href = response.data.authorizeURL;
-    } catch (err) {
-      console.error('Error getting authorization URL:', err);
-      setError('Failed to initiate Spotify authentication. Please try again.');
+      setLoading(true);
+      const response = await fetch('/api/spotify-auth');
+      const data = await response.json();
+      
+      // Redirect to Spotify authorization page
+      window.location.href = data.authUrl;
+    } catch (error) {
+      console.error('Login error:', error);
+      setError('Failed to initialize Spotify login');
+      setLoading(false);
     }
   };
 
@@ -147,7 +152,7 @@ export default function Home() {
         <div className={styles.authSection}>
           {!isAuthenticated ? (
             <button 
-              onClick={handleSpotifyLogin} 
+              onClick={handleLogin} 
               className={styles.spotifyLoginButton}
             >
               Login with Spotify

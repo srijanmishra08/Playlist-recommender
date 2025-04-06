@@ -3,6 +3,12 @@ import SpotifyWebApi from 'spotify-web-api-node';
 export default async function handler(req, res) {
   const method = req.method;
 
+  const clientId = process.env.SPOTIFY_CLIENT_ID;
+  const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
+  
+  // Use environment variable for redirect URI if available, otherwise use localhost
+  const redirectUri = process.env.REDIRECT_URI || 'http://localhost:3000/api/callback';
+
   // Generate authorization URL for login
   if (method === 'GET') {
     const scopes = [
@@ -15,9 +21,9 @@ export default async function handler(req, res) {
     ];
     
     const spotifyApi = new SpotifyWebApi({
-      clientId: '3e19f5ae83c443e3b963a177e78b008b',
-      clientSecret: '0bd55c4c50d3465f8a9d70878e260a07',
-      redirectUri: 'http://localhost:3000/api/callback'
+      clientId: clientId,
+      clientSecret: clientSecret,
+      redirectUri: redirectUri
     });
     
     // Create the authorization URL
@@ -35,9 +41,9 @@ export default async function handler(req, res) {
     }
     
     const spotifyApi = new SpotifyWebApi({
-      clientId: '3e19f5ae83c443e3b963a177e78b008b',
-      clientSecret: '0bd55c4c50d3465f8a9d70878e260a07',
-      redirectUri: 'http://localhost:3000/api/callback'
+      clientId: clientId,
+      clientSecret: clientSecret,
+      redirectUri: redirectUri
     });
     
     try {
@@ -68,9 +74,9 @@ export default async function handler(req, res) {
     }
     
     const spotifyApi = new SpotifyWebApi({
-      clientId: '3e19f5ae83c443e3b963a177e78b008b',
-      clientSecret: '0bd55c4c50d3465f8a9d70878e260a07',
-      redirectUri: 'http://localhost:3000/api/callback',
+      clientId: clientId,
+      clientSecret: clientSecret,
+      redirectUri: redirectUri,
       refreshToken
     });
     
