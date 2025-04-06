@@ -140,20 +140,13 @@ export default async function handler(req, res) {
     // Process all the tracks to extract artists and track IDs
     for (const playlistTracks of playlistTracksResults) {
       for (const item of playlistTracks.body.items) {
-        if (item && item.track) {
-          // Skip tracks with null data
-          if (!item.track.id) continue;
-          
+        if (item.track) {
           userTrackIds.add(item.track.id);
           allTracks.push(item.track);
           
           // Add all artists from the track
-          if (item.track.artists && Array.isArray(item.track.artists)) {
-            for (const artist of item.track.artists) {
-              if (artist && artist.id) {
-                artistIds.add(artist.id);
-              }
-            }
+          for (const artist of item.track.artists) {
+            artistIds.add(artist.id);
           }
         }
       }
@@ -197,23 +190,33 @@ export default async function handler(req, res) {
       let allArtists = [];
       for (const result of artistResults) {
         if (result.body && result.body.artists) {
-          allArtists = allArtists.concat(result.body.artists);
-          
+          // Add each artist with validation
           for (const artist of result.body.artists) {
-            // Store artist data for later ranking
-            artistData.set(artist.id, {
-              name: artist.name,
-              popularity: artist.popularity,
-              genres: artist.genres || []
-            });
-            
-            if (artist.genres && artist.genres.length > 0) {
-              for (const genre of artist.genres) {
-                userGenres.set(genre, (userGenres.get(genre) || 0) + 1);
+            if (artist && artist.id) {  // Ensure artist has required fields
+              allArtists.push(artist);
+              
+              // Store artist data for later ranking
+              artistData.set(artist.id, {
+                name: artist.name || 'Unknown Artist',
+                popularity: artist.popularity || 50,
+                genres: artist.genres || []
+              });
+              
+              if (artist.genres && artist.genres.length > 0) {
+                for (const genre of artist.genres) {
+                  userGenres.set(genre, (userGenres.get(genre) || 0) + 1);
+                }
               }
             }
           }
         }
+      }
+      
+      console.log(`Collected data for ${allArtists.length} valid artists`);
+      
+      if (allArtists.length === 0) {
+        console.log('No valid artists found, using fallback playlist');
+        return res.status(200).json(getFallbackPlaylist(cleanUserId));
       }
       
       // Get top genres
@@ -229,7 +232,7 @@ export default async function handler(req, res) {
       // - Popularity (but not too popular to enable discovery)
       // - Add a random component to ensure different results each time
       const rankedArtists = allArtists
-        .filter(artist => artist && artist.id && artist.genres) // Ensure artist has all required properties
+        .filter(artist => artist && artist.id && artist.genres)
         .map(artist => {
           // Count how many of the artist's genres match the user's top genres
           const genreMatchCount = (artist.genres || []).filter(genre => 
@@ -242,7 +245,7 @@ export default async function handler(req, res) {
             ? artist.popularity 
             : artist.popularity > 85 
               ? 180 - artist.popularity // Penalize super popular artists (180-90 = 90, 180-100 = 80)
-              : artist.popularity || 50; // Use 50 as default if popularity is missing
+              : artist.popularity; // Keep score as is for less popular artists
           
           // Add a randomization factor to ensure different results each time
           // This will be between 0-10 points (enough to shuffle things without overwhelming the main algorithm)
@@ -250,7 +253,7 @@ export default async function handler(req, res) {
               
           return {
             id: artist.id,
-            name: artist.name || 'Unknown Artist',
+            name: artist.name,
             // Include the random factor in the score to ensure variety on each request
             score: (genreMatchCount * 20) + popularityScore + randomFactor
           };
@@ -265,9 +268,7 @@ export default async function handler(req, res) {
       
       // Step 3: Get top tracks from highest ranked artists
       const topTracksPromises = [];
-      const topRankedArtistIds = rankedArtists
-        .filter(artist => artist && artist.id) // Double check that all artists have IDs
-        .map(artist => artist.id);
+      const topRankedArtistIds = rankedArtists.map(artist => artist.id);
       
       // Randomize order and select a different subset of artists each time
       // This ensures variety in recommendations between requests
@@ -276,22 +277,12 @@ export default async function handler(req, res) {
       
       // Take a different number of artists each time (between 8-10)
       // This adds more variety to the recommendations
-      const artistCount = Math.min(8 + Math.floor(Math.random() * 3), shuffledArtistIds.length); // 8, 9, or 10, but not more than available
+      const artistCount = 8 + Math.floor(Math.random() * 3); // 8, 9, or 10
       const discoveryArtistIds = shuffledArtistIds.slice(0, artistCount);
       
-      console.log(`Selected ${artistCount} artists randomly from top ${topRankedArtistIds.length} for this playlist`);
-      
-      if (discoveryArtistIds.length === 0) {
-        console.log('No valid artists found for discovery, using fallback playlist');
-        return res.status(200).json(getFallbackPlaylist(cleanUserId));
-      }
+      console.log(`Selected ${artistCount} artists randomly from top 20 for this playlist`);
       
       for (const artistId of discoveryArtistIds) {
-        if (!artistId) {
-          console.log('Skipping undefined artist ID');
-          continue;
-        }
-        
         topTracksPromises.push(
           spotifyApi.getArtistTopTracks(artistId, 'US')
             .catch(err => {
@@ -307,12 +298,12 @@ export default async function handler(req, res) {
       let discoveryTracks = [];
       
       for (const result of topTracksResults) {
-        if (result && result.body && result.body.tracks) {
-          // Filter out tracks the user already has
-          const newTracks = result.body.tracks
-            .filter(track => track && track.id && !userTrackIds.has(track.id))
-            // Also verify the track has all required fields
-            .filter(track => track.artists && track.artists.length > 0 && track.album);
+        if (result.body && result.body.tracks) {
+          // Filter out tracks the user already has and ensure tracks have all required properties
+          const newTracks = result.body.tracks.filter(track => 
+            track && track.id && track.artists && track.artists.length > 0 && track.artists[0] && track.artists[0].id && 
+            !userTrackIds.has(track.id)
+          );
           
           // Take a random subset of each artist's tracks to ensure variety
           // This way we don't always pick the same top tracks
@@ -356,6 +347,10 @@ export default async function handler(req, res) {
       const shuffledDiscoveryTracks = discoveryTracks.sort(() => 0.5 - Math.random());
       
       for (const track of shuffledDiscoveryTracks) {
+        // Ensure the track has artists and the first artist has an id
+        if (!track.artists || !track.artists.length || !track.artists[0] || !track.artists[0].id) {
+          continue;
+        }
         const mainArtistId = track.artists[0].id;
         
         if (!selectedArtistIds.has(mainArtistId) && selectedTracks.length < 10) {
@@ -385,19 +380,34 @@ export default async function handler(req, res) {
       const playlist = {
         name: playlistName,
         description: `Fresh playlist created on ${timestamp} based on your favorite genres: ${topGenres.slice(0, 3).join(', ')}`,
-        tracks: selectedTracks.map(track => ({
-          name: track.name,
-          artists: track.artists.map(artist => artist.name),
-          album: track.album.name,
-          albumImage: track.album.images && track.album.images.length > 0 ? track.album.images[0].url : null,
-          id: track.id,
-          previewUrl: track.preview_url,
-          uri: track.uri
-        })),
+        tracks: selectedTracks
+          .filter(track => 
+            // Ensure all required properties exist
+            track && 
+            track.name && 
+            track.artists && 
+            track.artists.length > 0 && 
+            track.album
+          )
+          .map(track => ({
+            name: track.name,
+            artists: track.artists.map(artist => artist?.name || 'Unknown Artist'),
+            album: track.album?.name || 'Unknown Album',
+            albumImage: track.album?.images && track.album.images.length > 0 ? track.album.images[0].url : null,
+            id: track.id,
+            previewUrl: track.preview_url,
+            uri: track.uri
+          })),
         canSave: !!accessToken
       };
       
-      console.log(`Successfully created discovery playlist "${playlistName}" with ${selectedTracks.length} tracks from top artists`);
+      // Final check to ensure we have tracks
+      if (!playlist.tracks || playlist.tracks.length === 0) {
+        console.log('No valid tracks after filtering, using fallback playlist');
+        return res.status(200).json(getFallbackPlaylist(cleanUserId));
+      }
+      
+      console.log(`Successfully created discovery playlist "${playlistName}" with ${playlist.tracks.length} tracks from top artists`);
       return res.status(200).json(playlist);
     } catch (artistError) {
       console.error('Error in artist-based discovery:', artistError.message || artistError);
