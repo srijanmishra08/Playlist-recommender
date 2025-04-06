@@ -71,7 +71,13 @@ export default function Home() {
       const data = await response.json();
       
       // Redirect to Spotify authorization page
-      window.location.href = data.authUrl;
+      if (data.authorizeURL) {
+        window.location.href = data.authorizeURL;
+      } else if (data.authUrl) {
+        window.location.href = data.authUrl;
+      } else {
+        throw new Error('No authorization URL returned');
+      }
     } catch (error) {
       console.error('Login error:', error);
       setError('Failed to initialize Spotify login');

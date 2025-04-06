@@ -14,16 +14,23 @@ export default async function handler(req, res) {
     redirectUri: process.env.REDIRECT_URI || 'http://localhost:3000/api/callback'
   });
 
+  // Get the base URL for redirects
+  // First try APP_URL env var, then use host headers, fallback to localhost
+  const baseUrl = process.env.APP_URL || 
+    (process.env.NODE_ENV === 'production' 
+      ? `https://${req.headers.host}`
+      : 'http://localhost:3000');
+
   // If there was an error during the OAuth process
   if (extractedError) {
-    return res.redirect(`/?error=${encodeURIComponent(extractedError)}`);
+    return res.redirect(`${baseUrl}/?error=${encodeURIComponent(extractedError)}`);
   }
 
   // If we received an authorization code, redirect to the frontend with the code
   if (extractedCode) {
-    return res.redirect(`/?code=${encodeURIComponent(extractedCode)}&state=${encodeURIComponent(state || '')}`);
+    return res.redirect(`${baseUrl}/?code=${encodeURIComponent(extractedCode)}&state=${encodeURIComponent(state || '')}`);
   }
 
   // If no code or error, something went wrong
-  return res.redirect('/?error=unknown_error');
+  return res.redirect(`${baseUrl}/?error=unknown_error`);
 } 

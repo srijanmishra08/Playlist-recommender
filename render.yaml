@@ -12,4 +12,6 @@ services:
       - key: SPOTIFY_CLIENT_SECRET
         sync: false
       - key: REDIRECT_URI
-        value: https://spotify-playlist-recommender.onrender.com/api/callback 
+        value: https://spotify-playlist-recommender.onrender.com/api/callback
+      - key: APP_URL
+        value: https://spotify-playlist-recommender.onrender.com 

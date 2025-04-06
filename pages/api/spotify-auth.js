@@ -29,7 +29,11 @@ export default async function handler(req, res) {
     // Create the authorization URL
     const authorizeURL = spotifyApi.createAuthorizeURL(scopes, 'spotify_auth_state');
     
-    return res.status(200).json({ authorizeURL });
+    // Return both formats to ensure compatibility
+    return res.status(200).json({ 
+      authorizeURL: authorizeURL,
+      authUrl: authorizeURL 
+    });
   }
   
   // Exchange code for token
