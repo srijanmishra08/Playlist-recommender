@@ -116,35 +116,69 @@ export default function Home() {
     }
   };
 
+  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
-    setPlaylist(null);
-    setSpotifySaveSuccess(null);
     
-    if (!userId) {
-      setError('Please enter a Spotify user ID');
+    if (!userId.trim()) {
+      setError('Please enter a Spotify username');
+      return;
+    }
+    
+    // Basic validation for Spotify username
+    const cleanedUserId = cleanSpotifyUsername(userId);
+    if (!cleanedUserId) {
+      setError('Please enter a valid Spotify username or profile URL');
       return;
     }
     
     setLoading(true);
-    
+    setError(null);
+    setPlaylist(null);
+
     try {
-      // The API endpoint will handle cleaning the user ID
-      const response = await axios.post('/api/create-playlist-direct', { 
-        userId,
-        accessToken: isAuthenticated ? accessToken : null // Pass token if authenticated
+      const response = await fetch('/api/create-playlist-direct', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          userId: cleanedUserId,
+          accessToken: isAuthenticated ? accessToken : null
+        }),
       });
-      setPlaylist(response.data);
-    } catch (err) {
-      console.error('Error response:', err.response?.data);
-      setError(err.response?.data?.error || 'An error occurred while creating the playlist');
-      if (err.response?.data?.details) {
-        setError(prev => `${prev}: ${err.response.data.details}`);
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to generate playlist');
       }
+
+      setPlaylist(data);
+    } catch (error) {
+      console.error('Error creating playlist:', error);
+      setError(error.message || 'Failed to create playlist. Please try again.');
     } finally {
       setLoading(false);
     }
+  };
+
+  // Helper function to clean and validate Spotify username
+  const cleanSpotifyUsername = (input) => {
+    // If it's a Spotify URL, extract the username
+    if (input.includes('spotify.com/user/')) {
+      input = input.split('spotify.com/user/')[1].split(/[?/#]/)[0];
+    }
+    
+    // Remove any spaces and special characters
+    input = input.trim();
+    
+    // Check if the username looks valid (alphanumeric with some special chars allowed)
+    if (/^[a-zA-Z0-9._-]+$/.test(input)) {
+      return input;
+    }
+    
+    return null;
   };
 
   return (
@@ -183,20 +217,35 @@ export default function Home() {
           <p><strong>Note:</strong> Make sure you have public playlists that contain tracks!</p>
         </div>
 
-        <form onSubmit={handleSubmit} className={styles.form}>
-          <input
-            type="text"
-            value={userId}
-            onChange={(e) => setUserId(e.target.value)}
-            placeholder="Enter Spotify user ID or profile URL"
-            className={styles.input}
-          />
-          <button type="submit" className={styles.button} disabled={loading}>
-            {loading ? 'Creating...' : 'Generate Playlist'}
-          </button>
-        </form>
-
-        {error && <p className={styles.error}>{error}</p>}
+        <section className={styles.formSection}>
+          <form onSubmit={handleSubmit} className={styles.form}>
+            <div className={styles.inputGroup}>
+              <label htmlFor="userId">Spotify Username</label>
+              <input
+                type="text"
+                id="userId"
+                value={userId}
+                onChange={(e) => setUserId(e.target.value)}
+                placeholder="Enter Spotify username"
+                className={styles.input}
+              />
+              <p className={styles.helpText}>
+                Not sure where to find your Spotify username? 
+                Open Spotify, go to your profile, click the three dots (•••) and select "Share" → "Copy Profile Link". 
+                Paste that link here.
+              </p>
+            </div>
+            <button
+              type="submit"
+              className={styles.generateButton}
+              disabled={loading}
+            >
+              {loading ? 'Generating...' : 'Generate Playlist'}
+            </button>
+          </form>
+          
+          {error && <div className={styles.error}>{error}</div>}
+        </section>
 
         {playlist && (
           <div className={styles.results}>

@@ -64,7 +64,17 @@ export default async function handler(req, res) {
       // Use the verified user ID from the response
       verifiedUserId = user.body.id;
     } catch (userError) {
-      console.error(`Error finding user "${cleanUserId}":`, userError.message);
+      // Improve error logging to show detailed error info
+      console.error(`Error finding user "${cleanUserId}":`, 
+        typeof userError === 'object' ? 
+          (userError.message || JSON.stringify(userError)) : 
+          userError
+      );
+      
+      // If we have a status code, log it
+      if (userError.statusCode) {
+        console.error(`Status code: ${userError.statusCode}`);
+      }
       
       // Try some common variations of the username
       const variations = [
@@ -554,8 +564,29 @@ function cleanSpotifyUserId(userId) {
     userId = userId.split('spotify.com/user/')[1].split(/[?/#]/)[0];
   }
   
-  // Remove any leading/trailing whitespace
-  return userId.trim();
+  // If it's a Spotify URI
+  if (userId.startsWith('spotify:user:')) {
+    userId = userId.split('spotify:user:')[1];
+  }
+  
+  // If it starts with 'user:', remove that prefix
+  if (userId.startsWith('user:')) {
+    userId = userId.substring(5);
+  }
+  
+  // Remove any leading/trailing whitespace and validate
+  userId = userId.trim();
+  
+  // Log the cleaned user ID for debugging
+  console.log(`Original user input cleaned to: "${userId}"`);
+  
+  // Basic validation
+  if (!/^[a-zA-Z0-9._-]+$/.test(userId)) {
+    console.warn(`Warning: User ID contains unusual characters: ${userId}`);
+    // We continue anyway as Spotify can have special usernames
+  }
+  
+  return userId;
 }
 
 // Helper function to capitalize first letter
